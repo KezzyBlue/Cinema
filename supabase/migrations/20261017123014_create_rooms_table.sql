@@ -1,0 +1,5 @@
+CREATE TABLE public.rooms(
+    roomId BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    roomName TEXT NOT NULL,
+    areaId BIGINT NOT NULL REFERENCES public.cinemas(cinemaId)
+)

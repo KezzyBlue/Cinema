@@ -1,0 +1,6 @@
+CREATE TABLE public.seats(
+    seatId BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    rowLabel CHAR NOT NULL,
+    seatNumber INT NOT NULL,
+    seatType TEXT NOT NULL
+)

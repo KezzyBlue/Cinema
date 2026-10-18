@@ -1,0 +1,7 @@
+CREATE TABLE public.showtimes(
+    showtimeId BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    eventId BIGINT NOT NULL REFERENCES public.events(eventId),
+    startAt TIMESTAMPTZ NOT NULL,
+    endAT TIMESTAMPTZ NOT NULL,
+    status TEXT NOT NULL
+)
