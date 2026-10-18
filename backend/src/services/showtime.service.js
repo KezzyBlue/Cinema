@@ -1,9 +1,10 @@
+
 const supabase = require("../config/supabase");
 
 async function getShowtimeById(showtimeId) {
   const { data, error } = await supabase
     .from("showtimes")
-    .select("showtimeid, eventid, startat, endat, status")
+    .select("showtimeid, eventid, roomid, startat, endat, status")
     .eq("showtimeid", showtimeId)
     .maybeSingle();
 
@@ -18,47 +19,68 @@ async function getShowtimeById(showtimeId) {
 async function getShowtimeSeats(showtimeId) {
   const { data: showtime, error: showtimeError } = await supabase
     .from("showtimes")
-    .select("showtimeid, eventid")
+    .select("showtimeid, eventid, roomid")
     .eq("showtimeid", showtimeId)
     .maybeSingle();
 
-  if (showtimeError) throw showtimeError;
+  if (showtimeError) {
+    throw showtimeError;
+  }
 
-  if (!showtime) return null;
+  if (!showtime) {
+    return null;
+  }
 
-  const { data: showtimeSeats, error: seatsError } = await supabase
+  const { data: seats, error: seatsError } = await supabase
+    .from("seats")
+    .select("seatid, rowlabel, seatnumber, seattype")
+    .order("rowlabel")
+    .order("seatnumber");
+
+  if (seatsError) {
+    throw seatsError;
+  }
+
+  const { data: states, error: statesError } = await supabase
     .from("showtime_seats")
-    .select(`
-      showtimeid,
-      seatid,
-      roomid,
-      status,
-      seats (
-        rowlabel,
-        seatnumber,
-        seattype
-      )
-    `)
-    .eq("showtimeid", showtimeId)
-    .order("seatid", { ascending: true });
+    .select("seatid, status, holdexpiresat")
+    .eq("showtimeid", showtimeId);
 
-  if (seatsError) throw seatsError;
+  if (statesError) {
+    throw statesError;
+  }
+
+  const stateMap = new Map(
+    states.map((item) => [item.seatid, item])
+  );
 
   return {
     eventId: showtime.eventid,
     showtimeId: showtime.showtimeid,
-    roomId: showtimeSeats[0]?.roomid ?? null,
-    seats: showtimeSeats.map((item) => ({
-      seatId: item.seatid,
-      rowLabel: item.seats?.rowlabel,
-      seatNumber: item.seats?.seatnumber,
-      seatType: item.seats?.seattype,
-      status: item.status,
-    })),
+    roomId: showtime.roomid,
+
+    seats: seats.map((seat) => {
+      const state = stateMap.get(seat.seatid);
+
+      const isExpired =
+        state?.status === "holding" &&
+        state.holdexpiresat &&
+        new Date(state.holdexpiresat) <= new Date();
+
+      return {
+        seatId: seat.seatid,
+        rowLabel: seat.rowlabel,
+        seatNumber: seat.seatnumber,
+        seatType: seat.seattype,
+        status: !state || isExpired
+          ? "available"
+          : state.status,
+      };
+    }),
   };
 }
 
-module.exports = { 
-    getShowtimeById,
-    getShowtimeSeats
+module.exports = {
+  getShowtimeById,
+  getShowtimeSeats,
 };

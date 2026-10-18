@@ -92,6 +92,7 @@ Bảng này mô tả ghế vật lý. Trạng thái đặt ghế theo từng su�
 |---|---|
 | `showtimeId` | ID suất chiếu |
 | `eventId` | Sự kiện/phim được chiếu |
+| `roomId` | Phòng chiếu |
 | `startAt` | Thời điểm bắt đầu |
 | `endAt` | Thời điểm kết thúc |
 | `status` | Trạng thái suất chiếu |
@@ -104,7 +105,6 @@ Quan hệ: `showtimes.eventId` tham chiếu đến `events.eventId`.
 |---|---|
 | `showtimeId` | Suất chiếu |
 | `seatId` | Ghế vật lý |
-| `roomId` | Phòng chiếu |
 | `status` | `available`, `holding` hoặc `booked` |
 | `holdToken` | Token giữ ghế |
 | `holdExpiresAt` | Thời điểm hết hạn giữ ghế |
