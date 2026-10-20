@@ -4,7 +4,7 @@ const supabase = require("../config/supabase");
 async function getShowtimeById(showtimeId) {
   const { data, error } = await supabase
     .from("showtimes")
-    .select("showtimeid, eventid, roomid, startat, endat, status")
+    .select("showtimeid, eventid, roomid, startat, endat")
     .eq("showtimeid", showtimeId)
     .maybeSingle();
 
@@ -23,13 +23,8 @@ async function getShowtimeSeats(showtimeId) {
     .eq("showtimeid", showtimeId)
     .maybeSingle();
 
-  if (showtimeError) {
-    throw showtimeError;
-  }
-
-  if (!showtime) {
-    return null;
-  }
+  if (showtimeError) throw showtimeError;
+  if (!showtime) return null;
 
   const { data: seats, error: seatsError } = await supabase
     .from("seats")
@@ -37,22 +32,20 @@ async function getShowtimeSeats(showtimeId) {
     .order("rowlabel")
     .order("seatnumber");
 
-  if (seatsError) {
-    throw seatsError;
-  }
+  if (seatsError) throw seatsError;
 
   const { data: states, error: statesError } = await supabase
     .from("showtime_seats")
     .select("seatid, status, holdexpiresat")
     .eq("showtimeid", showtimeId);
 
-  if (statesError) {
-    throw statesError;
-  }
+  if (statesError) throw statesError;
 
   const stateMap = new Map(
     states.map((item) => [item.seatid, item])
   );
+
+  const now = Date.now();
 
   return {
     eventId: showtime.eventid,
@@ -64,17 +57,21 @@ async function getShowtimeSeats(showtimeId) {
 
       const isExpired =
         state?.status === "holding" &&
-        state.holdexpiresat &&
-        new Date(state.holdexpiresat) <= new Date();
+        state.holdexpiresat != null &&
+        new Date(state.holdexpiresat).getTime() <= now;
+
+      let status = state?.status ?? "available";
+
+      if (isExpired) {
+        status = "available";
+      }
 
       return {
         seatId: seat.seatid,
         rowLabel: seat.rowlabel,
         seatNumber: seat.seatnumber,
         seatType: seat.seattype,
-        status: !state || isExpired
-          ? "available"
-          : state.status,
+        status,
       };
     }),
   };
